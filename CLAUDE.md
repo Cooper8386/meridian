@@ -135,6 +135,15 @@ center — see the comment in that file before changing the rotation logic,
 it's easy to get the visibility test inverted. Respects
 `prefers-reduced-motion` (rotation is skipped, globe renders static).
 
+`GLOBE_CITY_POOL` holds ~20 cities (lat/lon + IANA zone); on each mount,
+`pickRandomCities()` picks `FEATURED_CITY_COUNT` (4) at random via a
+`useState` lazy initializer, so a fresh page load (or SPA remount of `/`)
+shows a different set. Hovering a pin shows its live local time + UTC
+offset via `formatTimeInZone`/`getOffsetLabel` from `lib/timezones.ts`,
+driven by a `now` state ticked every second — kept independent of the
+rotation interval so the tooltip stays accurate even when
+`prefers-reduced-motion` skips rotation entirely.
+
 `d3-geo`, `topojson-client`, and `world-atlas` are dependencies added
 specifically for this component — if it's ever removed, remove them too.
 
