@@ -13,17 +13,25 @@ const STORAGE_KEY = "meridian:progress:v1";
 
 export interface ProgressState {
   currentLessonIndex: number;
+  /**
+   * IANA time zone the user has explicitly chosen, overriding the
+   * browser-detected one from lib/userTimeZone.ts. null means "use the
+   * detected time zone." Not surfaced in any settings UI yet — Practice
+   * mode will need it, so the storage is in place ahead of that UI.
+   */
+  timeZoneOverride: string | null;
 }
 
 const DEFAULT_PROGRESS: ProgressState = {
   currentLessonIndex: 0,
+  timeZoneOverride: null,
 };
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
 }
 
-function isValidProgressState(value: unknown): value is ProgressState {
+function hasValidLessonIndex(value: unknown): value is { currentLessonIndex: number } {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -45,11 +53,13 @@ export function getProgress(): ProgressState {
     }
 
     const parsed: unknown = JSON.parse(raw);
-    if (!isValidProgressState(parsed)) {
+    if (!hasValidLessonIndex(parsed)) {
       return DEFAULT_PROGRESS;
     }
 
-    return parsed;
+    // Merge over defaults so fields added after a user's first visit
+    // (e.g. timeZoneOverride) come back populated instead of undefined.
+    return { ...DEFAULT_PROGRESS, ...parsed };
   } catch {
     return DEFAULT_PROGRESS;
   }

@@ -54,9 +54,24 @@ absent (see `public/sounds/README.md`).
 `lib/timezones.ts` holds the static lesson data (`lessons: TimeZoneLesson[]`,
 24 entries) plus two live-clock helpers used by the home page's world clock
 strip: `getOffsetLabel(timeZone, date)` and `formatTimeInZone(timeZone, date)`.
-Lesson offsets are hand-written strings (they describe a zone's rule, e.g.
-"UTC-05:00 / -04:00 (DST)"); the clock-strip helpers compute the *current*
-offset live via `Intl.DateTimeFormat`. Don't conflate the two.
+Lesson offsets and `abbreviation` (e.g. "CST / CDT") are hand-written strings
+(they describe a zone's rule); the clock-strip helpers compute the *current*
+offset live via `Intl.DateTimeFormat`. Don't conflate the two. Abbreviation
+strings vary a lot in length ("UTC" vs "AEST / AEDT"); `LessonCard.tsx`
+sizes that display down for longer strings — keep that in mind if you add
+lessons with even longer abbreviations.
+
+### User's time zone (detection + override storage, no settings UI yet)
+
+`lib/userTimeZone.ts` exports `detectBrowserTimeZone()` (wraps
+`Intl.DateTimeFormat().resolvedOptions().timeZone`, falls back to `"UTC"`).
+`ProgressState.timeZoneOverride` (in `lib/progress.ts`) stores an explicit
+user choice, `null` meaning "use the detected zone." `NavBar.tsx` computes
+the effective zone as `getProgress().timeZoneOverride ?? detectBrowserTimeZone()`
+and shows it next to the UTC clock.
+**TODO: there is no UI yet to actually set `timeZoneOverride`** — Practice
+mode will need one; add it to `/progress` when that's built, per the user's
+direction rather than a new `/settings` route.
 
 ### Learn mode flow
 
@@ -85,10 +100,43 @@ confirming scope first. `/progress` is a real (if minimal) page — it reads
 
 Tailwind v4, configured via `@theme inline` in `app/globals.css` (no
 `tailwind.config.*`). Design tokens (`--background`, `--surface`, `--accent`,
-etc.) live there as CSS variables and match `docs/mockup.png` — dark navy
-background, lime-green accent, a serif-italic accent font (`Newsreader`,
-loaded via `next/font/google` in `app/layout.tsx`) for tagline emphasis.
-Check the mockup before changing colors or layout.
+`--globe-*`, etc.) live there as CSS variables and take cues from
+`docs/mockup.png` — dark navy background, lime-green accent.
+
+Three-font system, all loaded via `next/font/google` in `app/layout.tsx`:
+- `font-display` (Encode Sans Expanded) — headlines, city names, the big
+  time zone abbreviation on lesson cards. Stands in for GT America
+  Extended / Söhne Breit, which are commercial fonts not available here.
+- `font-sans` (Inter Tight, the default) — body copy.
+- `font-mono` (JetBrains Mono) — anything numeric or code-like: UTC
+  offsets, IANA zone names, the nav clock.
+
+The font component's own CSS variable name (e.g. `--font-display-expanded`)
+is deliberately **not** the same as the semantic Tailwind token
+(`--font-display`) it feeds in `globals.css`'s `@theme inline` block —
+naming them the same creates a self-referencing custom property
+(`--font-display: var(--font-display)`), which browsers treat as invalid.
+Keep that two-step naming for any font you add.
+
+If real GT America Extended / Söhne Breit files become available, swap them
+in via `@font-face` + local files (see the "I have the license" path this
+was scoped against) rather than `next/font/google`.
+
+### Landing page globe
+
+`components/Globe.tsx` renders a rotating orthographic-projection globe
+(the "azimuthal" look from the mockup) using `d3-geo` + `topojson-client`
+against `world-atlas`'s `land-110m.json` (bundled, no network fetch).
+Rotation is driven by a `setInterval` nudging `lambda` (longitude) every
+`TICK_INTERVAL_MS`, which re-derives the projected land path, graticule,
+and city pin positions in a `useMemo`. City pin visibility (front vs. back
+of the sphere) is computed with `geoDistance` against the current view
+center — see the comment in that file before changing the rotation logic,
+it's easy to get the visibility test inverted. Respects
+`prefers-reduced-motion` (rotation is skipped, globe renders static).
+
+`d3-geo`, `topojson-client`, and `world-atlas` are dependencies added
+specifically for this component — if it's ever removed, remove them too.
 
 ## Docker
 
@@ -108,7 +156,8 @@ user explicitly changes scope:
   auth provider, login/sign-up flow, or call the Supabase client, without
   asking first.
 - **No new dependencies outside the approved stack** (Next.js, TypeScript,
-  Tailwind, Framer Motion, Supabase) without asking first.
+  Tailwind, Framer Motion, Supabase, plus `d3-geo` / `topojson-client` /
+  `world-atlas` for the landing page globe) without asking first.
 - **Don't expand scope** (building out real Practice mode or Map mode
   functionality, deploying to Vercel, etc.) without asking first — v1 is
   intentionally narrow, with room left to add these later.

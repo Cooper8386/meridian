@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Newsreader } from "next/font/google";
+import { Encode_Sans_Expanded, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import NavBar from "@/components/NavBar";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const interTight = Inter_Tight({
+  variable: "--font-neutral-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetBrainsMono = JetBrains_Mono({
+  variable: "--font-mono-numeric",
   subsets: ["latin"],
 });
 
-const taglineSerif = Newsreader({
-  variable: "--font-tagline-serif",
+const displayExpanded = Encode_Sans_Expanded({
+  variable: "--font-display-expanded",
+  weight: ["500", "600", "700"],
   subsets: ["latin"],
-  style: ["italic"],
 });
 
 export const metadata: Metadata = {
@@ -28,9 +28,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${taglineSerif.variable} h-full antialiased`}
+      className={`${interTight.variable} ${jetBrainsMono.variable} ${displayExpanded.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
         <NavBar />
         <main className="flex-1 flex flex-col">{children}</main>
       </body>

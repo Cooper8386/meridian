@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getProgress } from "@/lib/progress";
+import { formatTimeInZone } from "@/lib/timezones";
+import { detectBrowserTimeZone } from "@/lib/userTimeZone";
 
 const NAV_LINKS = [
   { href: "/learn", label: "Learn" },
@@ -21,17 +24,29 @@ const utcFormatter = new Intl.DateTimeFormat("en-GB", {
 export default function NavBar() {
   const pathname = usePathname();
   const [utcTime, setUtcTime] = useState<string | null>(null);
+  const [localTimeZone, setLocalTimeZone] = useState<string | null>(null);
+  const [localTime, setLocalTime] = useState<string | null>(null);
 
   useEffect(() => {
-    // Sets the initial clock reading post-mount to avoid a server/client
-    // render mismatch, then subscribes to a ticking interval.
+    // Reading progress/detecting the browser's zone requires the browser,
+    // so this must run post-mount rather than during the lazy initial
+    // state, to avoid a server/client render mismatch.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setUtcTime(utcFormatter.format(new Date()));
-    const interval = setInterval(() => {
-      setUtcTime(utcFormatter.format(new Date()));
-    }, 1000);
-    return () => clearInterval(interval);
+    setLocalTimeZone(getProgress().timeZoneOverride ?? detectBrowserTimeZone());
   }, []);
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setUtcTime(utcFormatter.format(now));
+      if (localTimeZone) {
+        setLocalTime(formatTimeInZone(localTimeZone, now));
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [localTimeZone]);
 
   return (
     <header className="border-b border-surface-border bg-background">
@@ -59,9 +74,14 @@ export default function NavBar() {
           })}
         </nav>
 
-        <span className="text-xs tracking-wider text-muted tabular-nums">
-          UTC {utcTime ?? "--:--"}
-        </span>
+        <div className="flex flex-col items-end font-mono text-xs tracking-wider tabular-nums">
+          <span className="text-muted">UTC {utcTime ?? "--:--"}</span>
+          {localTimeZone && (
+            <span className="text-foreground/80">
+              {localTime ?? "--:--"} · {localTimeZone}
+            </span>
+          )}
+        </div>
       </div>
     </header>
   );
