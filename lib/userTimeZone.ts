@@ -1,11 +1,12 @@
+import { lessons } from "@/lib/timezones";
+
 /**
  * Detects the browser's IANA time zone. This is the fallback used
  * whenever the user hasn't set an explicit override (see
  * ProgressState.timeZoneOverride in lib/progress.ts).
  *
- * Practice mode (not yet built) will need to know the user's own time
- * zone to generate conversion prompts; this detection is wired up now so
- * that storage and UI can build on top of it later.
+ * Practice mode uses this to generate conversion prompts against the
+ * user's own time zone.
  */
 export function detectBrowserTimeZone(): string {
   try {
@@ -13,4 +14,24 @@ export function detectBrowserTimeZone(): string {
   } catch {
     return "UTC";
   }
+}
+
+/**
+ * Lists IANA time zones for the override picker on /progress.
+ * `Intl.supportedValuesOf` isn't guaranteed everywhere (older engines),
+ * so this falls back to the zones already used by the 24 lessons plus
+ * UTC — a smaller but always-available list.
+ */
+export function listAvailableTimeZones(): string[] {
+  try {
+    const supported = Intl.supportedValuesOf("timeZone");
+    if (supported.length > 0) {
+      return supported;
+    }
+  } catch {
+    // Fall through to the curated fallback below.
+  }
+
+  const fallback = new Set(["Etc/UTC", ...lessons.map((lesson) => lesson.timeZone)]);
+  return Array.from(fallback).sort();
 }

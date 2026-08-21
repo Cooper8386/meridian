@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getProgress } from "@/lib/progress";
+import { getProgress, PROGRESS_UPDATED_EVENT } from "@/lib/progress";
 import { formatTimeInZone } from "@/lib/timezones";
 import { detectBrowserTimeZone } from "@/lib/userTimeZone";
 
@@ -31,8 +31,17 @@ export default function NavBar() {
     // Reading progress/detecting the browser's zone requires the browser,
     // so this must run post-mount rather than during the lazy initial
     // state, to avoid a server/client render mismatch.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocalTimeZone(getProgress().timeZoneOverride ?? detectBrowserTimeZone());
+    const readZone = () =>
+      setLocalTimeZone(getProgress().timeZoneOverride ?? detectBrowserTimeZone());
+
+    readZone();
+
+    // NavBar is a persistent layout component (mounted once, not
+    // remounted on client-side navigation), so without this listener a
+    // time zone override set on /progress wouldn't show up here until a
+    // full page reload.
+    window.addEventListener(PROGRESS_UPDATED_EVENT, readZone);
+    return () => window.removeEventListener(PROGRESS_UPDATED_EVENT, readZone);
   }, []);
 
   useEffect(() => {

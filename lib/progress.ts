@@ -11,20 +11,37 @@
 
 const STORAGE_KEY = "meridian:progress:v1";
 
+/**
+ * Dispatched on `window` after every successful save. NavBar is a
+ * persistent layout component (mounted once, not remounted on client-side
+ * navigation) that reads progress in a mount-only effect — without this
+ * event, changes made on /progress (e.g. the time zone override) wouldn't
+ * show up in the nav clock until a full page reload.
+ */
+export const PROGRESS_UPDATED_EVENT = "meridian:progress-updated";
+
 export interface ProgressState {
   currentLessonIndex: number;
   /**
    * IANA time zone the user has explicitly chosen, overriding the
    * browser-detected one from lib/userTimeZone.ts. null means "use the
-   * detected time zone." Not surfaced in any settings UI yet — Practice
-   * mode will need it, so the storage is in place ahead of that UI.
+   * detected time zone." Set via the picker on /progress.
    */
   timeZoneOverride: string | null;
+  /** Best-ever correct streak in Practice mode. */
+  practiceBestStreak: number;
+  /** Lifetime count of Practice mode questions answered. */
+  practiceTotalAnswered: number;
+  /** Lifetime count of Practice mode questions answered correctly. */
+  practiceTotalCorrect: number;
 }
 
 const DEFAULT_PROGRESS: ProgressState = {
   currentLessonIndex: 0,
   timeZoneOverride: null,
+  practiceBestStreak: 0,
+  practiceTotalAnswered: 0,
+  practiceTotalCorrect: 0,
 };
 
 function isBrowser(): boolean {
@@ -72,6 +89,7 @@ export function saveProgress(state: ProgressState): void {
 
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.dispatchEvent(new CustomEvent(PROGRESS_UPDATED_EVENT));
   } catch {
     // Storage may be unavailable (e.g. private browsing quota). Fail silently.
   }
