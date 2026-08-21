@@ -89,7 +89,13 @@ direction rather than a new `/settings` route.
    click, and plays `playNextSound()` / `playPrevSound()` from `lib/sound.ts`.
 
 `components/LessonCard.tsx` animates between lessons with
-`AnimatePresence mode="wait"`, keyed on `lesson.id`.
+`AnimatePresence mode="wait"`, keyed on `lesson.id`. The card also runs its
+own ticking clock (`now` state) to show "Right now" in the lesson's zone —
+the one piece of live, non-static content per lesson. `abbreviationSizeClass()`
+and `offsetSizeClass()` size those two strings down as they get longer (e.g.
+"AEST / AEDT", "UTC-09:00 / -08:00 (DST)") so long combos don't wrap;
+extend those thresholds rather than removing them if you add zones with
+even longer strings.
 
 ### Nav and scope boundaries
 
@@ -104,17 +110,13 @@ confirming scope first. `/progress` is a real (if minimal) page — it reads
 
 Tailwind v4, configured via `@theme inline` in `app/globals.css` (no
 `tailwind.config.*`). Design tokens (`--background`, `--surface`, `--accent`,
-`--globe-*`, `--meridian-line`, etc.) live there as CSS variables and take
+`--globe-*`, `--globe-glow`, etc.) live there as CSS variables and take
 cues from `docs/mockup.png` — dark navy background, lime-green accent.
-
-`body` in `globals.css` has a `repeating-linear-gradient` background —
-faint vertical lines at a fixed interval, `background-attachment: fixed`.
-This is the site's signature motif: literal lines of longitude ("Meridian"
-lines), vertical-only on purpose (meridians run north–south; don't add
-horizontal lines to "complete" it — that would make it parallels/graticule
-instead and dilute the reference). It exists to keep wide viewports from
-reading as empty; keep it subtle (`--meridian-line` is ~6% opacity) — it
-should never be a design element the user notices consciously.
+(An earlier version used a full-page repeating vertical-line background as
+the "meridian lines" motif — removed per user feedback, don't reintroduce
+it. The current fill for empty-page-feel is a `--globe-glow` radial
+gradient positioned behind the hero's `Globe`, see `app/page.tsx`, plus
+wider `max-w-7xl` containers and the `Footer`.)
 
 Three-font system, all loaded via `next/font/google` in `app/layout.tsx`:
 - `font-display` (Encode Sans Expanded) — headlines, city names, the big
@@ -148,10 +150,11 @@ center — see the comment in that file before changing the rotation logic,
 it's easy to get the visibility test inverted. Respects
 `prefers-reduced-motion` (rotation is skipped, globe renders static).
 
-`GLOBE_CITY_POOL` holds ~20 cities (lat/lon + IANA zone); on each mount,
-`pickSpreadCities()` picks `FEATURED_CITY_COUNT` (4) via a `useState` lazy
-initializer, so a fresh page load (or SPA remount of `/`) shows a
-different set. It isn't pure random — it splits the pool into
+`GLOBE_CITY_POOL` holds ~20 cities (lat/lon + IANA zone). `pickSpreadCities()`
+picks `FEATURED_CITY_COUNT` (4) both on mount and on a repeating
+`CITY_SWAP_INTERVAL_MS` timer, so the featured set keeps cycling through
+the visit, not just once per page load — pins fade in/out via
+`AnimatePresence` on swap rather than jumping. It isn't pure random — it splits the pool into
 `FEATURED_CITY_COUNT` longitude bands and picks one city per band (falling
 back to a same-band candidate that clears `MIN_SEPARATION_DEGREES` of
 great-circle distance from what's already picked). This guarantees the

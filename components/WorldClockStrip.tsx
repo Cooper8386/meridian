@@ -6,9 +6,10 @@ import { formatTimeInZone, getOffsetLabel } from "@/lib/timezones";
 const STRIP_CITIES = [
   { city: "Los Angeles", timeZone: "America/Los_Angeles" },
   { city: "Chicago", timeZone: "America/Chicago" },
+  { city: "New York", timeZone: "America/New_York" },
   { city: "London", timeZone: "Europe/London" },
-  { city: "Cairo", timeZone: "Africa/Cairo" },
-  { city: "Kuala Lumpur", timeZone: "Asia/Kuala_Lumpur" },
+  { city: "China", timeZone: "Asia/Shanghai" },
+  { city: "Tokyo", timeZone: "Asia/Tokyo" },
   { city: "Sydney", timeZone: "Australia/Sydney" },
 ];
 

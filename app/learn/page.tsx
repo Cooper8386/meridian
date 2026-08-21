@@ -58,9 +58,11 @@ export default function LearnPage() {
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center gap-8 px-6 py-16">
       <div className="text-center">
         <p className="text-xs tracking-widest text-muted uppercase">
-          Time, Space, and Context
+          Know what time it is, anywhere.
         </p>
-        <h1 className="mt-2 text-3xl font-bold">Learn the time zones</h1>
+        <h1 className="mt-2 font-display text-4xl font-bold">
+          Learn the time zones
+        </h1>
       </div>
 
       <p className="font-mono text-sm text-muted">
@@ -69,7 +71,7 @@ export default function LearnPage() {
 
       <LessonCard lesson={currentLesson} direction={direction} />
 
-      <div className="flex w-full max-w-xl items-center justify-between">
+      <div className="flex w-full max-w-3xl items-center justify-between">
         <button
           type="button"
           onClick={handlePrevious}

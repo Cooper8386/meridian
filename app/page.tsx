@@ -30,38 +30,49 @@ const STEPS = [
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <section className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-6 py-16 lg:grid-cols-[minmax(0,1fr)_32rem] lg:py-20">
-        <div>
-          <p className="text-xs tracking-widest text-muted uppercase">
-            Time, Space, and Context
-          </p>
-          <h1 className="mt-4 max-w-3xl font-display text-6xl leading-[1.03] font-bold sm:text-7xl lg:text-8xl">
-            Learn the world
-            <br />
-            <span className="text-accent">one clock at a time.</span>
-          </h1>
-          <p className="mt-6 max-w-md text-base text-muted">
-            Understand UTC, convert local time with confidence, and connect
-            every time zone to its place on the map.
-          </p>
+      <section className="relative overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-[6%] h-[44rem] w-[44rem] -translate-y-1/2 rounded-full blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle, var(--globe-glow) 0%, transparent 70%)",
+          }}
+        />
 
-          <div className="mt-8 flex items-center gap-6">
-            <Link
-              href="/learn"
-              className="rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90"
-            >
-              Continue learning
-            </Link>
-            <Link
-              href="/map"
-              className="text-sm text-foreground/90 transition-colors hover:text-foreground"
-            >
-              Explore The Map →
-            </Link>
+        <div className="relative mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-6 py-16 lg:grid-cols-[minmax(0,1fr)_32rem] lg:py-20">
+          <div>
+            <p className="text-xs tracking-widest text-muted uppercase">
+              Know what time it is, anywhere.
+            </p>
+            <h1 className="mt-4 max-w-3xl font-display text-6xl leading-[1.03] font-bold sm:text-7xl lg:text-8xl">
+              Learn the world
+              <br />
+              <span className="text-accent">one clock at a time.</span>
+            </h1>
+            <p className="mt-6 max-w-md text-base text-muted">
+              Understand UTC, convert local time with confidence, and connect
+              every time zone to its place on the map.
+            </p>
+
+            <div className="mt-8 flex items-center gap-6">
+              <Link
+                href="/learn"
+                className="rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90"
+              >
+                Continue learning
+              </Link>
+              <Link
+                href="/map"
+                className="text-sm text-foreground/90 transition-colors hover:text-foreground"
+              >
+                Explore The Map →
+              </Link>
+            </div>
           </div>
-        </div>
 
-        <Globe />
+          <Globe />
+        </div>
       </section>
 
       <WorldClockStrip />

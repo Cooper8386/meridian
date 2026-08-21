@@ -17,7 +17,7 @@ export default function Footer() {
             Meridian
           </span>
           <span className="ml-2 text-xs text-muted">
-            Time, space, and context.
+            Know what time it is, anywhere.
           </span>
         </div>
 

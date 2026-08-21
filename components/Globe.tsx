@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { geoDistance, geoGraticule, geoOrthographic, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
@@ -46,6 +46,7 @@ const GLOBE_CITY_POOL: GlobeCity[] = [
 
 const FEATURED_CITY_COUNT = 4;
 const MIN_SEPARATION_DEGREES = 35;
+const CITY_SWAP_INTERVAL_MS = 9000;
 
 /**
  * Splits the pool into FEATURED_CITY_COUNT longitude bands and picks one
@@ -98,7 +99,7 @@ const graticule = geoGraticule().step([20, 20])();
 const sphere = { type: "Sphere" as const };
 
 export default function Globe() {
-  const [featuredCities] = useState(() =>
+  const [featuredCities, setFeaturedCities] = useState(() =>
     pickSpreadCities(GLOBE_CITY_POOL, FEATURED_CITY_COUNT),
   );
   const [lambda, setLambda] = useState(-20);
@@ -121,6 +122,17 @@ export default function Globe() {
     // Independent of rotation so the hover detail stays accurate even
     // when spinning is skipped for prefers-reduced-motion.
     const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Cycles which cities are on display, so the globe doesn't show the
+    // same four for the whole visit — pins fade out/in (see AnimatePresence
+    // below) rather than jumping.
+    const interval = setInterval(() => {
+      setFeaturedCities(pickSpreadCities(GLOBE_CITY_POOL, FEATURED_CITY_COUNT));
+      setHoveredCity(null);
+    }, CITY_SWAP_INTERVAL_MS);
     return () => clearInterval(interval);
   }, []);
 
@@ -183,45 +195,51 @@ export default function Globe() {
         />
       </svg>
 
-      {pins
-        .filter((pin) => pin.visible)
-        .map((pin) => {
-          const isHovered = hoveredCity === pin.name;
-          return (
-            <div
-              key={pin.name}
-              className="absolute"
-              style={{
-                left: `${pin.x}%`,
-                top: `${pin.y}%`,
-                zIndex: isHovered ? 30 : 10,
-              }}
-            >
-              <div className="pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent" />
-
-              <div
-                onMouseEnter={() => setHoveredCity(pin.name)}
-                onMouseLeave={() => setHoveredCity(null)}
-                className="absolute top-1/2 left-2 flex -translate-y-1/2 cursor-default items-center overflow-hidden rounded bg-accent px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap text-accent-foreground uppercase"
+      <AnimatePresence>
+        {pins
+          .filter((pin) => pin.visible)
+          .map((pin) => {
+            const isHovered = hoveredCity === pin.name;
+            return (
+              <motion.div
+                key={pin.name}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="absolute"
+                style={{
+                  left: `${pin.x}%`,
+                  top: `${pin.y}%`,
+                  zIndex: isHovered ? 30 : 10,
+                }}
               >
-                <span>{pin.name}</span>
-                <motion.span
-                  initial={false}
-                  animate={
-                    isHovered
-                      ? { opacity: 1, width: "auto", marginLeft: 6 }
-                      : { opacity: 0, width: 0, marginLeft: 0 }
-                  }
-                  transition={{ duration: 0.18, ease: "easeOut" }}
-                  className="normal-case"
+                <div className="pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent" />
+
+                <div
+                  onMouseEnter={() => setHoveredCity(pin.name)}
+                  onMouseLeave={() => setHoveredCity(null)}
+                  className="absolute top-1/2 left-2 flex -translate-y-1/2 cursor-default items-center overflow-hidden rounded bg-accent px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap text-accent-foreground uppercase"
                 >
-                  {formatTimeInZone(pin.timeZone, now)} ·{" "}
-                  {getOffsetLabel(pin.timeZone, now)}
-                </motion.span>
-              </div>
-            </div>
-          );
-        })}
+                  <span>{pin.name}</span>
+                  <motion.span
+                    initial={false}
+                    animate={
+                      isHovered
+                        ? { opacity: 1, width: "auto", marginLeft: 6 }
+                        : { opacity: 0, width: 0, marginLeft: 0 }
+                    }
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    className="normal-case"
+                  >
+                    {formatTimeInZone(pin.timeZone, now)} ·{" "}
+                    {getOffsetLabel(pin.timeZone, now)}
+                  </motion.span>
+                </div>
+              </motion.div>
+            );
+          })}
+      </AnimatePresence>
     </div>
   );
 }
