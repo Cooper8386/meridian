@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Encode_Sans_Expanded, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import Footer from "@/components/Footer";
 import NavBar from "@/components/NavBar";
+import { AuthProvider } from "@/lib/auth";
 import "./globals.css";
 
 const interTight = Inter_Tight({
@@ -32,9 +33,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${interTight.variable} ${jetBrainsMono.variable} ${displayExpanded.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
-        <NavBar />
-        <main className="flex-1 flex flex-col">{children}</main>
-        <Footer />
+        <AuthProvider>
+          <NavBar />
+          <main className="flex-1 flex flex-col">{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

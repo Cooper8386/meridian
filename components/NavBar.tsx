@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth";
 import { getProgress, PROGRESS_UPDATED_EVENT } from "@/lib/progress";
 import { formatTimeInZone } from "@/lib/timezones";
 import { detectBrowserTimeZone } from "@/lib/userTimeZone";
@@ -23,6 +24,7 @@ const utcFormatter = new Intl.DateTimeFormat("en-GB", {
 
 export default function NavBar() {
   const pathname = usePathname();
+  const { user, loading, signOut } = useAuth();
   const [utcTime, setUtcTime] = useState<string | null>(null);
   const [localTimeZone, setLocalTimeZone] = useState<string | null>(null);
   const [localTime, setLocalTime] = useState<string | null>(null);
@@ -87,13 +89,33 @@ export default function NavBar() {
           })}
         </nav>
 
-        <div className="flex flex-col items-end font-mono text-xs tracking-wider tabular-nums">
-          <span className="text-muted">UTC {utcTime ?? "--:--"}</span>
-          {localTimeZone && (
-            <span className="text-foreground/80">
-              {localTime ?? "--:--"} · {localTimeZone}
-            </span>
-          )}
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-end font-mono text-xs tracking-wider tabular-nums">
+            <span className="text-muted">UTC {utcTime ?? "--:--"}</span>
+            {localTimeZone && (
+              <span className="text-foreground/80">
+                {localTime ?? "--:--"} · {localTimeZone}
+              </span>
+            )}
+          </div>
+
+          {!loading &&
+            (user ? (
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="text-sm text-muted transition-colors hover:text-foreground"
+              >
+                Log out
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="text-sm text-muted transition-colors hover:text-foreground"
+              >
+                Log in
+              </Link>
+            ))}
         </div>
       </div>
     </header>
