@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { geoDistance, geoGraticule, geoOrthographic, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
@@ -14,8 +15,9 @@ interface GlobeCity {
   timeZone: string;
 }
 
-// A broad pool to draw from — a handful are picked at random each visit
-// so the globe doesn't show the same four cities every time.
+// A broad pool to draw from — pickSpreadCities() below picks a handful,
+// spread around the globe, on each visit so the globe doesn't show the
+// same four cities every time.
 const GLOBE_CITY_POOL: GlobeCity[] = [
   { name: "London", lat: 51.51, lon: -0.13, timeZone: "Europe/London" },
   { name: "Reykjavik", lat: 64.15, lon: -21.94, timeZone: "Atlantic/Reykjavik" },
@@ -43,10 +45,44 @@ const GLOBE_CITY_POOL: GlobeCity[] = [
 ];
 
 const FEATURED_CITY_COUNT = 4;
+const MIN_SEPARATION_DEGREES = 35;
 
-function pickRandomCities(pool: GlobeCity[], count: number): GlobeCity[] {
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+/**
+ * Splits the pool into FEATURED_CITY_COUNT longitude bands and picks one
+ * city per band. Evenly-spaced bands guarantee the selection is spread
+ * around the globe, so at least one city is visible from any rotation
+ * angle and same-band cities — the most overlap-prone pairs — never both
+ * get picked. Within a band, prefers a candidate whose great-circle
+ * distance from cities already picked clears MIN_SEPARATION_DEGREES, to
+ * also catch near-band-boundary overlaps a pure longitude split can't.
+ */
+function pickSpreadCities(pool: GlobeCity[], count: number): GlobeCity[] {
+  const minSeparationRad = (MIN_SEPARATION_DEGREES * Math.PI) / 180;
+  const bandSize = 360 / count;
+  const bands: GlobeCity[][] = Array.from({ length: count }, () => []);
+
+  for (const city of pool) {
+    const normalizedLon = (((city.lon + 180) % 360) + 360) % 360;
+    const bandIndex = Math.min(count - 1, Math.floor(normalizedLon / bandSize));
+    bands[bandIndex].push(city);
+  }
+
+  const selected: GlobeCity[] = [];
+  for (const band of bands) {
+    if (band.length === 0) continue;
+    const shuffled = [...band].sort(() => Math.random() - 0.5);
+    const candidate =
+      shuffled.find((city) =>
+        selected.every(
+          (picked) =>
+            geoDistance([city.lon, city.lat], [picked.lon, picked.lat]) >
+            minSeparationRad,
+        ),
+      ) ?? shuffled[0];
+    selected.push(candidate);
+  }
+
+  return selected;
 }
 
 const SIZE = 420;
@@ -63,7 +99,7 @@ const sphere = { type: "Sphere" as const };
 
 export default function Globe() {
   const [featuredCities] = useState(() =>
-    pickRandomCities(GLOBE_CITY_POOL, FEATURED_CITY_COUNT),
+    pickSpreadCities(GLOBE_CITY_POOL, FEATURED_CITY_COUNT),
   );
   const [lambda, setLambda] = useState(-20);
   const [spinning] = useState(() => {
@@ -82,7 +118,7 @@ export default function Globe() {
   }, [spinning]);
 
   useEffect(() => {
-    // Independent of rotation so the hover tooltip stays accurate even
+    // Independent of rotation so the hover detail stays accurate even
     // when spinning is skipped for prefers-reduced-motion.
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
@@ -149,28 +185,43 @@ export default function Globe() {
 
       {pins
         .filter((pin) => pin.visible)
-        .map((pin) => (
-          <div
-            key={pin.name}
-            className="absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center"
-            style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-            onMouseEnter={() => setHoveredCity(pin.name)}
-            onMouseLeave={() => setHoveredCity(null)}
-          >
-            <div className="h-2 w-2 rounded-full bg-accent" />
+        .map((pin) => {
+          const isHovered = hoveredCity === pin.name;
+          return (
+            <div
+              key={pin.name}
+              className="absolute"
+              style={{
+                left: `${pin.x}%`,
+                top: `${pin.y}%`,
+                zIndex: isHovered ? 30 : 10,
+              }}
+            >
+              <div className="pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent" />
 
-            <span className="pointer-events-none absolute top-1/2 left-full ml-1.5 -translate-y-1/2 rounded bg-accent px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap text-accent-foreground uppercase">
-              {pin.name}
-            </span>
-
-            {hoveredCity === pin.name && (
-              <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded border border-surface-border bg-surface px-2 py-1 font-mono text-xs whitespace-nowrap text-foreground shadow-lg">
-                {formatTimeInZone(pin.timeZone, now)} ·{" "}
-                {getOffsetLabel(pin.timeZone, now)}
+              <div
+                onMouseEnter={() => setHoveredCity(pin.name)}
+                onMouseLeave={() => setHoveredCity(null)}
+                className="absolute top-1/2 left-2 flex -translate-y-1/2 cursor-default items-center overflow-hidden rounded bg-accent px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap text-accent-foreground uppercase"
+              >
+                <span>{pin.name}</span>
+                <motion.span
+                  initial={false}
+                  animate={
+                    isHovered
+                      ? { opacity: 1, width: "auto", marginLeft: 6 }
+                      : { opacity: 0, width: 0, marginLeft: 0 }
+                  }
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  className="normal-case"
+                >
+                  {formatTimeInZone(pin.timeZone, now)} ·{" "}
+                  {getOffsetLabel(pin.timeZone, now)}
+                </motion.span>
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
     </div>
   );
 }

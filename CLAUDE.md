@@ -136,13 +136,35 @@ it's easy to get the visibility test inverted. Respects
 `prefers-reduced-motion` (rotation is skipped, globe renders static).
 
 `GLOBE_CITY_POOL` holds ~20 cities (lat/lon + IANA zone); on each mount,
-`pickRandomCities()` picks `FEATURED_CITY_COUNT` (4) at random via a
-`useState` lazy initializer, so a fresh page load (or SPA remount of `/`)
-shows a different set. Hovering a pin shows its live local time + UTC
-offset via `formatTimeInZone`/`getOffsetLabel` from `lib/timezones.ts`,
-driven by a `now` state ticked every second — kept independent of the
-rotation interval so the tooltip stays accurate even when
-`prefers-reduced-motion` skips rotation entirely.
+`pickSpreadCities()` picks `FEATURED_CITY_COUNT` (4) via a `useState` lazy
+initializer, so a fresh page load (or SPA remount of `/`) shows a
+different set. It isn't pure random — it splits the pool into
+`FEATURED_CITY_COUNT` longitude bands and picks one city per band (falling
+back to a same-band candidate that clears `MIN_SEPARATION_DEGREES` of
+great-circle distance from what's already picked). This guarantees the
+selection is spread around the globe: at least one city is visible from
+any rotation angle (never a blank globe), and same-band pairs — the most
+overlap-prone case — can never both get picked. If you change
+`FEATURED_CITY_COUNT` or the pool, keep enough cities per band (the pool
+above has 5–6 per band) or the spread guarantee weakens.
+
+Hovering a pin's label (not the dot — the dot is `pointer-events-none`)
+smoothly expands it in place to show live local time + UTC offset, via a
+single always-mounted `motion.span` whose `animate` prop toggles between
+collapsed (`width: 0, opacity: 0`) and expanded based on `isHovered`.
+Deliberately **not** `AnimatePresence`/mount-unmount: an earlier version
+using `AnimatePresence` for the exit transition appeared to get stuck
+mid-exit in testing, and needlessly complicates a case that's really just
+a two-state style toggle. If you touch this, keep it that way — the
+always-mounted `animate` toggle is a strictly simpler, more robust
+pattern. Note: this couldn't be visually verified in-session because the
+Claude-in-Chrome automated tab reports `document.hidden = true`, which
+pauses `requestAnimationFrame`-driven style updates in every animation
+library including Framer Motion; the DOM-event and React-state layers
+were verified directly instead (`data-*` attribute probes confirmed
+exclusive, correctly-toggling hover state). Live-time state (`now`) ticks
+every second independent of the rotation interval, so it stays accurate
+even when `prefers-reduced-motion` skips rotation entirely.
 
 `d3-geo`, `topojson-client`, and `world-atlas` are dependencies added
 specifically for this component — if it's ever removed, remove them too.
