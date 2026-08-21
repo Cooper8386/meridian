@@ -11,6 +11,7 @@
   --globe-sphere: #0f2a2c;
   --globe-land: #174548;
   --globe-graticule: #1f3a3e;
+  --meridian-line: rgba(146, 196, 204, 0.06);
 }
 
 @theme inline {
@@ -27,6 +28,17 @@
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
+  /* Ambient meridian lines — literal lines of longitude, evenly spaced,
+     fixed to the viewport so they read as a property of the space rather
+     than the page. Deliberately vertical-only: meridians run north-south. */
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--meridian-line) 0,
+    var(--meridian-line) 1px,
+    transparent 1px,
+    transparent 88px
+  );
+  background-attachment: fixed;
 }

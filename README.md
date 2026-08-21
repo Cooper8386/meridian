@@ -1,4 +1,4 @@
-# Meridian — World Time Lab
+# Meridian
 
 A web app that teaches users the world's time zones. v1 ships **Learn mode**:
 a sequence of flashcard-style lessons covering major cities, their IANA time

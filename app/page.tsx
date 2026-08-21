@@ -30,12 +30,12 @@ const STEPS = [
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <section className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-6 py-24 lg:grid-cols-[minmax(0,1fr)_28rem]">
+      <section className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-6 py-16 lg:grid-cols-[minmax(0,1fr)_32rem] lg:py-20">
         <div>
           <p className="text-xs tracking-widest text-muted uppercase">
             Time, Space, and Context
           </p>
-          <h1 className="mt-4 max-w-2xl font-display text-5xl leading-[1.05] font-bold sm:text-6xl">
+          <h1 className="mt-4 max-w-3xl font-display text-6xl leading-[1.03] font-bold sm:text-7xl lg:text-8xl">
             Learn the world
             <br />
             <span className="text-accent">one clock at a time.</span>
@@ -66,9 +66,9 @@ export default function Home() {
 
       <WorldClockStrip />
 
-      <section className="mx-auto grid w-full max-w-6xl grid-cols-1 divide-y divide-surface-border border-b border-surface-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <section className="mx-auto grid w-full max-w-7xl grid-cols-1 divide-y divide-surface-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         {STEPS.map((step) => (
-          <div key={step.number} className="flex flex-col gap-4 px-6 py-10">
+          <div key={step.number} className="flex flex-col gap-4 px-6 py-12">
             <p className="font-mono text-xs text-accent">{step.number}</p>
             <h3 className="font-display text-xl font-bold">{step.title}</h3>
             <p className="text-sm text-muted">{step.description}</p>

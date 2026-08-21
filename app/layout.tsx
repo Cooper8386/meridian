@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Encode_Sans_Expanded, Inter_Tight, JetBrains_Mono } from "next/font/google";
+import Footer from "@/components/Footer";
 import NavBar from "@/components/NavBar";
 import "./globals.css";
 
@@ -20,7 +21,7 @@ const displayExpanded = Encode_Sans_Expanded({
 });
 
 export const metadata: Metadata = {
-  title: "World Time Lab | Meridian",
+  title: "Meridian",
   description: "Learn the world's time zones, one clock at a time.",
 };
 
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
         <NavBar />
         <main className="flex-1 flex flex-col">{children}</main>
+        <Footer />
       </body>
     </html>
   );

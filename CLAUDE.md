@@ -4,9 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Meridian ("World Time Lab") — a Next.js app that teaches users the world's
-time zones, and later, world geography. This is v1: Learn mode plus local
-progress storage only. See README.md for setup and user-facing details.
+Meridian — a Next.js app that teaches users the world's time zones, and
+later, world geography. This is v1: Learn mode plus local progress storage
+only. See README.md for setup and user-facing details.
+
+The app is branded "Meridian" everywhere in the UI (nav wordmark, page
+title, footer) — it was previously called "World Time Lab" during early
+development; don't reintroduce that name.
 
 ## Commands
 
@@ -100,8 +104,17 @@ confirming scope first. `/progress` is a real (if minimal) page — it reads
 
 Tailwind v4, configured via `@theme inline` in `app/globals.css` (no
 `tailwind.config.*`). Design tokens (`--background`, `--surface`, `--accent`,
-`--globe-*`, etc.) live there as CSS variables and take cues from
-`docs/mockup.png` — dark navy background, lime-green accent.
+`--globe-*`, `--meridian-line`, etc.) live there as CSS variables and take
+cues from `docs/mockup.png` — dark navy background, lime-green accent.
+
+`body` in `globals.css` has a `repeating-linear-gradient` background —
+faint vertical lines at a fixed interval, `background-attachment: fixed`.
+This is the site's signature motif: literal lines of longitude ("Meridian"
+lines), vertical-only on purpose (meridians run north–south; don't add
+horizontal lines to "complete" it — that would make it parallels/graticule
+instead and dilute the reference). It exists to keep wide viewports from
+reading as empty; keep it subtle (`--meridian-line` is ~6% opacity) — it
+should never be a design element the user notices consciously.
 
 Three-font system, all loaded via `next/font/google` in `app/layout.tsx`:
 - `font-display` (Encode Sans Expanded) — headlines, city names, the big

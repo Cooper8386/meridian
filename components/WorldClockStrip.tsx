@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { formatTimeInZone, getOffsetLabel } from "@/lib/timezones";
 
 const STRIP_CITIES = [
+  { city: "Los Angeles", timeZone: "America/Los_Angeles" },
   { city: "Chicago", timeZone: "America/Chicago" },
   { city: "London", timeZone: "Europe/London" },
+  { city: "Cairo", timeZone: "Africa/Cairo" },
   { city: "Kuala Lumpur", timeZone: "Asia/Kuala_Lumpur" },
   { city: "Sydney", timeZone: "Australia/Sydney" },
 ];
@@ -24,7 +26,7 @@ export default function WorldClockStrip() {
 
   return (
     <div className="border-y border-surface-border bg-surface">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-12 gap-y-4 px-6 py-6">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-12 gap-y-4 px-6 py-8">
         <p className="text-xs tracking-widest text-muted uppercase">
           World Clock
         </p>

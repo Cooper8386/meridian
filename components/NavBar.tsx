@@ -50,9 +50,13 @@ export default function NavBar() {
 
   return (
     <header className="border-b border-surface-border bg-background">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="text-sm font-bold tracking-widest uppercase">
-          World <span className="text-accent">Time</span> Lab
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-sm font-bold tracking-[0.2em] uppercase"
+        >
+          <span className="h-4 w-0.5 bg-accent" aria-hidden="true" />
+          Meridian
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm text-muted sm:flex">
