@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { geoDistance, geoGraticule, geoOrthographic, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
@@ -15,15 +15,13 @@ interface GlobeCity {
   timeZone: string;
 }
 
-// A broad pool to draw from — pickSpreadCities() below picks a handful,
-// spread around the globe, on each visit so the globe doesn't show the
-// same four cities every time.
+// The 15 most globally recognizable cities the globe cycles through. As
+// rotation carries one out of view, a new visible, non-overlapping one
+// from this pool takes its place — see refreshDisplayed() below.
 const GLOBE_CITY_POOL: GlobeCity[] = [
   { name: "London", lat: 51.51, lon: -0.13, timeZone: "Europe/London" },
-  { name: "Reykjavik", lat: 64.15, lon: -21.94, timeZone: "Atlantic/Reykjavik" },
   { name: "Berlin", lat: 52.52, lon: 13.4, timeZone: "Europe/Berlin" },
   { name: "Cairo", lat: 30.04, lon: 31.24, timeZone: "Africa/Cairo" },
-  { name: "Nairobi", lat: -1.29, lon: 36.82, timeZone: "Africa/Nairobi" },
   { name: "Moscow", lat: 55.76, lon: 37.62, timeZone: "Europe/Moscow" },
   { name: "Dubai", lat: 25.2, lon: 55.27, timeZone: "Asia/Dubai" },
   { name: "New Delhi", lat: 28.61, lon: 77.21, timeZone: "Asia/Kolkata" },
@@ -32,59 +30,15 @@ const GLOBE_CITY_POOL: GlobeCity[] = [
   { name: "Singapore", lat: 1.35, lon: 103.82, timeZone: "Asia/Singapore" },
   { name: "Tokyo", lat: 35.68, lon: 139.65, timeZone: "Asia/Tokyo" },
   { name: "Sydney", lat: -33.87, lon: 151.21, timeZone: "Australia/Sydney" },
-  { name: "Auckland", lat: -36.85, lon: 174.76, timeZone: "Pacific/Auckland" },
-  { name: "Honolulu", lat: 21.31, lon: -157.86, timeZone: "Pacific/Honolulu" },
-  { name: "Anchorage", lat: 61.22, lon: -149.9, timeZone: "America/Anchorage" },
   { name: "Los Angeles", lat: 34.05, lon: -118.24, timeZone: "America/Los_Angeles" },
-  { name: "Denver", lat: 39.74, lon: -104.99, timeZone: "America/Denver" },
   { name: "Chicago", lat: 41.88, lon: -87.63, timeZone: "America/Chicago" },
-  { name: "Mexico City", lat: 19.43, lon: -99.13, timeZone: "America/Mexico_City" },
   { name: "New York", lat: 40.71, lon: -74.01, timeZone: "America/New_York" },
   { name: "Sao Paulo", lat: -23.55, lon: -46.63, timeZone: "America/Sao_Paulo" },
-  { name: "Buenos Aires", lat: -34.6, lon: -58.38, timeZone: "America/Argentina/Buenos_Aires" },
 ];
 
-const FEATURED_CITY_COUNT = 4;
-const MIN_SEPARATION_DEGREES = 35;
-const CITY_SWAP_INTERVAL_MS = 9000;
-
-/**
- * Splits the pool into FEATURED_CITY_COUNT longitude bands and picks one
- * city per band. Evenly-spaced bands guarantee the selection is spread
- * around the globe, so at least one city is visible from any rotation
- * angle and same-band cities — the most overlap-prone pairs — never both
- * get picked. Within a band, prefers a candidate whose great-circle
- * distance from cities already picked clears MIN_SEPARATION_DEGREES, to
- * also catch near-band-boundary overlaps a pure longitude split can't.
- */
-function pickSpreadCities(pool: GlobeCity[], count: number): GlobeCity[] {
-  const minSeparationRad = (MIN_SEPARATION_DEGREES * Math.PI) / 180;
-  const bandSize = 360 / count;
-  const bands: GlobeCity[][] = Array.from({ length: count }, () => []);
-
-  for (const city of pool) {
-    const normalizedLon = (((city.lon + 180) % 360) + 360) % 360;
-    const bandIndex = Math.min(count - 1, Math.floor(normalizedLon / bandSize));
-    bands[bandIndex].push(city);
-  }
-
-  const selected: GlobeCity[] = [];
-  for (const band of bands) {
-    if (band.length === 0) continue;
-    const shuffled = [...band].sort(() => Math.random() - 0.5);
-    const candidate =
-      shuffled.find((city) =>
-        selected.every(
-          (picked) =>
-            geoDistance([city.lon, city.lat], [picked.lon, picked.lat]) >
-            minSeparationRad,
-        ),
-      ) ?? shuffled[0];
-    selected.push(candidate);
-  }
-
-  return selected;
-}
+const TARGET_DISPLAYED_COUNT = 4;
+const MIN_SEPARATION_PX = 100;
+const MAINTENANCE_INTERVAL_MS = 1000;
 
 const SIZE = 420;
 const TILT = -18;
@@ -98,17 +52,88 @@ const land = feature(
 const graticule = geoGraticule().step([20, 20])();
 const sphere = { type: "Sphere" as const };
 
+interface ProjectedCity extends GlobeCity {
+  visible: boolean;
+  x: number;
+  y: number;
+}
+
+/** Projects the whole pool at a given rotation (raw SIZE-unit coordinates). */
+function projectPool(lambda: number): ProjectedCity[] {
+  const projection = geoOrthographic()
+    .scale(SIZE / 2 - 12)
+    .translate([SIZE / 2, SIZE / 2])
+    .rotate([lambda, TILT])
+    .clipAngle(90);
+
+  const viewCenter: [number, number] = [-lambda, -TILT];
+
+  return GLOBE_CITY_POOL.map((city) => {
+    const point: [number, number] = [city.lon, city.lat];
+    const visible = geoDistance(point, viewCenter) < Math.PI / 2;
+    const projected = projection(point);
+    return {
+      ...city,
+      visible,
+      x: projected ? projected[0] : 0,
+      y: projected ? projected[1] : 0,
+    };
+  });
+}
+
+function pixelDistance(a: ProjectedCity, b: ProjectedCity): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+/**
+ * Drops names that have rotated out of view, then tops back up to
+ * TARGET_DISPLAYED_COUNT with visible, non-overlapping candidates from
+ * the pool. This is what makes the globe feel like it's continuously
+ * revealing cities as it turns, rather than swapping the whole set on a
+ * timer regardless of what's actually on screen.
+ */
+function refreshDisplayed(
+  projected: ProjectedCity[],
+  currentNames: string[],
+): string[] {
+  const kept = currentNames
+    .map((name) => projected.find((c) => c.name === name))
+    .filter((c): c is ProjectedCity => !!c && c.visible);
+
+  const chosen = [...kept];
+  const candidates = projected
+    .filter((c) => c.visible && !chosen.some((k) => k.name === c.name))
+    .sort(() => Math.random() - 0.5);
+
+  for (const candidate of candidates) {
+    if (chosen.length >= TARGET_DISPLAYED_COUNT) break;
+    const overlaps = chosen.some(
+      (c) => pixelDistance(c, candidate) < MIN_SEPARATION_PX,
+    );
+    if (!overlaps) chosen.push(candidate);
+  }
+
+  return chosen.map((c) => c.name);
+}
+
 export default function Globe() {
-  const [featuredCities, setFeaturedCities] = useState(() =>
-    pickSpreadCities(GLOBE_CITY_POOL, FEATURED_CITY_COUNT),
-  );
   const [lambda, setLambda] = useState(-20);
+  const lambdaRef = useRef(lambda);
+
   const [spinning] = useState(() => {
     if (typeof window === "undefined") return true;
     return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   });
+
+  const [displayedNames, setDisplayedNames] = useState<string[]>(() =>
+    refreshDisplayed(projectPool(-20), []),
+  );
   const [hoveredCity, setHoveredCity] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    lambdaRef.current = lambda;
+  }, [lambda]);
 
   useEffect(() => {
     if (!spinning) return;
@@ -126,15 +151,19 @@ export default function Globe() {
   }, []);
 
   useEffect(() => {
-    // Cycles which cities are on display, so the globe doesn't show the
-    // same four for the whole visit — pins fade out/in (see AnimatePresence
-    // below) rather than jumping.
+    if (!spinning) return;
     const interval = setInterval(() => {
-      setFeaturedCities(pickSpreadCities(GLOBE_CITY_POOL, FEATURED_CITY_COUNT));
-      setHoveredCity(null);
-    }, CITY_SWAP_INTERVAL_MS);
+      const projected = projectPool(lambdaRef.current);
+      setDisplayedNames((current) => {
+        const next = refreshDisplayed(projected, current);
+        const unchanged =
+          next.length === current.length &&
+          next.every((name, i) => name === current[i]);
+        return unchanged ? current : next;
+      });
+    }, MAINTENANCE_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, []);
+  }, [spinning]);
 
   const { landPath, graticulePath, spherePath, pins } = useMemo(() => {
     const projection = geoOrthographic()
@@ -144,27 +173,21 @@ export default function Globe() {
       .clipAngle(90);
 
     const path = geoPath(projection);
-    const viewCenter: [number, number] = [-lambda, -TILT];
-
-    const projectedPins = featuredCities.map((city) => {
-      const point: [number, number] = [city.lon, city.lat];
-      const visible = geoDistance(point, viewCenter) < Math.PI / 2;
-      const projected = projection(point);
-      return {
-        ...city,
-        visible,
-        x: projected ? (projected[0] / SIZE) * 100 : 0,
-        y: projected ? (projected[1] / SIZE) * 100 : 0,
-      };
-    });
+    const projected = projectPool(lambda).filter((c) =>
+      displayedNames.includes(c.name),
+    );
 
     return {
       landPath: path(land) ?? "",
       graticulePath: path(graticule) ?? "",
       spherePath: path(sphere) ?? "",
-      pins: projectedPins,
+      pins: projected.map((c) => ({
+        ...c,
+        x: (c.x / SIZE) * 100,
+        y: (c.y / SIZE) * 100,
+      })),
     };
-  }, [lambda, featuredCities]);
+  }, [lambda, displayedNames]);
 
   return (
     <div className="relative mx-auto aspect-square w-full max-w-md">

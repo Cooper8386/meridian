@@ -150,19 +150,24 @@ center — see the comment in that file before changing the rotation logic,
 it's easy to get the visibility test inverted. Respects
 `prefers-reduced-motion` (rotation is skipped, globe renders static).
 
-`GLOBE_CITY_POOL` holds ~20 cities (lat/lon + IANA zone). `pickSpreadCities()`
-picks `FEATURED_CITY_COUNT` (4) both on mount and on a repeating
-`CITY_SWAP_INTERVAL_MS` timer, so the featured set keeps cycling through
-the visit, not just once per page load — pins fade in/out via
-`AnimatePresence` on swap rather than jumping. It isn't pure random — it splits the pool into
-`FEATURED_CITY_COUNT` longitude bands and picks one city per band (falling
-back to a same-band candidate that clears `MIN_SEPARATION_DEGREES` of
-great-circle distance from what's already picked). This guarantees the
-selection is spread around the globe: at least one city is visible from
-any rotation angle (never a blank globe), and same-band pairs — the most
-overlap-prone case — can never both get picked. If you change
-`FEATURED_CITY_COUNT` or the pool, keep enough cities per band (the pool
-above has 5–6 per band) or the spread guarantee weakens.
+`GLOBE_CITY_POOL` holds 15 well-known cities (lat/lon + IANA zone). Rather
+than swapping the whole featured set on a timer, `refreshDisplayed()` runs
+every `MAINTENANCE_INTERVAL_MS` and does two things: drops any displayed
+city whose `visible` has gone false (rotated past the edge), then tops
+back up to `TARGET_DISPLAYED_COUNT` (4) with visible pool cities that
+don't overlap on screen with what's already shown — overlap is a real
+pixel-distance check (`pixelDistance` vs `MIN_SEPARATION_PX`) against each
+candidate's *projected* position, not a geographic one, since that's what
+actually determines label collisions. Cities you're currently looking at
+never disappear just because the timer fired; they only drop when
+rotation genuinely carries them out of view, and only one or two change at
+a time — see `refreshDisplayed()`'s comment before changing this. The
+render's own `.filter(pin => pin.visible)` (recomputed every rotation
+tick, not just every maintenance tick) is what makes a pin disappear the
+instant it's actually off-screen, rather than up to `MAINTENANCE_INTERVAL_MS`
+late. `lambdaRef` mirrors `lambda` via an effect so the maintenance
+interval (which only runs every ~1s) reads the current rotation instead of
+a stale closure.
 
 Hovering a pin's label (not the dot — the dot is `pointer-events-none`)
 smoothly expands it in place to show live local time + UTC offset, via a
