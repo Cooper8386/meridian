@@ -1,0 +1,14 @@
+services:
+  meridian:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: meridian:latest
+    container_name: meridian
+    ports:
+      - "3000:3000"
+    environment:
+      # Optional — not used by anything in v1 (see lib/supabaseClient.ts).
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+    restart: unless-stopped
