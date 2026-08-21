@@ -86,6 +86,9 @@ export default function LessonCard({ lesson, direction }: LessonCardProps) {
             >
               {lesson.abbreviation}
             </p>
+            <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
+              {lesson.fullName}
+            </p>
           </div>
 
           <div className="mt-6">

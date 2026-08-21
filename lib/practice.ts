@@ -32,6 +32,7 @@ interface ZoneInfo {
   city: string;
   country: string;
   abbreviation: string;
+  fullName: string;
 }
 
 const QUESTION_TYPES: QuestionType[] = [
@@ -75,6 +76,7 @@ function lessonToZoneInfo(lesson: TimeZoneLesson): ZoneInfo {
     city: lesson.city,
     country: lesson.country,
     abbreviation: lesson.abbreviation,
+    fullName: lesson.fullName,
   };
 }
 
@@ -87,11 +89,15 @@ function parseZoneLocationLabel(timeZone: string): string {
   return last.replace(/_/g, " ");
 }
 
-function getLiveAbbreviation(timeZone: string, date: Date): string {
+function getLiveZoneName(
+  timeZone: string,
+  date: Date,
+  style: "short" | "long",
+): string {
   try {
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone,
-      timeZoneName: "short",
+      timeZoneName: style,
     }).formatToParts(date);
     const tzPart = parts.find((part) => part.type === "timeZoneName");
     return tzPart?.value ?? timeZone;
@@ -105,20 +111,29 @@ function buildLocalZoneInfo(timeZone: string, date: Date): ZoneInfo {
     timeZone,
     city: parseZoneLocationLabel(timeZone),
     country: "",
-    abbreviation: getLiveAbbreviation(timeZone, date),
+    abbreviation: getLiveZoneName(timeZone, date, "short"),
+    fullName: getLiveZoneName(timeZone, date, "long"),
   };
 }
 
 // The single place difficulty is applied, so every question type behaves
 // consistently: easy shows city/country + zone, medium only the zone,
 // hard only city/country.
+//
+// Medium spells out the full zone name rather than the bare abbreviation.
+// Several abbreviations in lib/timezones.ts collide (CST is both Chicago's
+// Central Standard Time and Shanghai's China Standard Time; BST is both
+// London's British Summer Time and Dhaka's Bangladesh Standard Time) — with
+// no city/country shown at this difficulty, the abbreviation alone can't
+// be disambiguated, so the question would have no correct answer a user
+// could actually reason out.
 function describeZone(zone: ZoneInfo, difficulty: Difficulty): string {
   const location = zone.country ? `${zone.city}, ${zone.country}` : zone.city;
   switch (difficulty) {
     case "easy":
       return `${location} (${zone.abbreviation})`;
     case "medium":
-      return zone.abbreviation;
+      return `${zone.fullName} (${zone.abbreviation})`;
     case "hard":
       return location;
   }
