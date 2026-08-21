@@ -9,17 +9,13 @@ interface LessonCardProps {
   direction: 1 | -1;
 }
 
-function abbreviationSizeClass(abbreviation: string): string {
-  if (abbreviation.length <= 4) return "text-7xl sm:text-8xl";
-  if (abbreviation.length <= 8) return "text-5xl sm:text-6xl";
-  return "text-4xl sm:text-5xl";
-}
-
-function offsetSizeClass(offset: string): string {
-  if (offset.length <= 10) return "text-4xl sm:text-5xl";
-  if (offset.length <= 18) return "text-3xl sm:text-4xl";
-  return "text-2xl sm:text-3xl";
-}
+// One fixed size each, chosen to fit the longest strings in lib/timezones.ts
+// ("AEST / AEDT", "UTC-09:00 / -08:00 (DST)") without wrapping. Deliberately
+// NOT length-based — that made short abbreviations like "BRT" render huge
+// next to "EST / EDT" at a visibly smaller size, so flipping between
+// lessons felt inconsistent. Every lesson should look the same weight.
+const ABBREVIATION_SIZE_CLASS = "text-5xl sm:text-6xl";
+const OFFSET_SIZE_CLASS = "text-2xl sm:text-3xl";
 
 const variants = {
   enter: (direction: 1 | -1) => ({
@@ -86,7 +82,7 @@ export default function LessonCard({ lesson, direction }: LessonCardProps) {
             </div>
 
             <p
-              className={`mt-6 font-display leading-none font-bold tracking-tight break-words ${abbreviationSizeClass(lesson.abbreviation)}`}
+              className={`mt-6 font-display leading-none font-bold tracking-tight break-words ${ABBREVIATION_SIZE_CLASS}`}
             >
               {lesson.abbreviation}
             </p>
@@ -94,7 +90,7 @@ export default function LessonCard({ lesson, direction }: LessonCardProps) {
 
           <div className="mt-6">
             <p
-              className={`font-mono font-bold text-accent tabular-nums ${offsetSizeClass(lesson.utcOffset)}`}
+              className={`font-mono font-bold text-accent tabular-nums ${OFFSET_SIZE_CLASS}`}
             >
               {lesson.utcOffset}
             </p>

@@ -91,11 +91,16 @@ direction rather than a new `/settings` route.
 `components/LessonCard.tsx` animates between lessons with
 `AnimatePresence mode="wait"`, keyed on `lesson.id`. The card also runs its
 own ticking clock (`now` state) to show "Right now" in the lesson's zone —
-the one piece of live, non-static content per lesson. `abbreviationSizeClass()`
-and `offsetSizeClass()` size those two strings down as they get longer (e.g.
-"AEST / AEDT", "UTC-09:00 / -08:00 (DST)") so long combos don't wrap;
-extend those thresholds rather than removing them if you add zones with
-even longer strings.
+the one piece of live, non-static content per lesson. `ABBREVIATION_SIZE_CLASS`
+/ `OFFSET_SIZE_CLASS` are single fixed sizes, not length-based — an earlier
+per-string-length version made short abbreviations (e.g. "BRT") render much
+larger than long ones ("EST / EDT"), which felt inconsistent flipping
+between lessons. Both fixed sizes are chosen to fit the longest real
+strings ("AEST / AEDT" / "NZST / NZDT" / "AKST / AKDT",
+"UTC-09:00 / -08:00 (DST)") without wrapping — verified against all three.
+If you add a zone with a longer abbreviation or offset than those, re-check
+wrapping before assuming the fixed size still holds; don't reintroduce
+length-based sizing to "fix" it.
 
 ### Nav and scope boundaries
 
