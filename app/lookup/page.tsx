@@ -140,7 +140,7 @@ export default function LookupPage() {
         </AnimatePresence>
       </div>
 
-      <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid flex-1 grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
           {results.length > 0 && (
             <div className="flex items-center justify-between px-1">
@@ -172,7 +172,7 @@ export default function LookupPage() {
           </AnimatePresence>
         </div>
 
-        <div className="min-h-[360px] lg:sticky lg:top-6 lg:h-[calc(100vh-8rem)]">
+        <div className="min-h-[360px] lg:sticky lg:top-6 lg:h-[560px]">
           <LocationMap place={selected} />
         </div>
       </div>
