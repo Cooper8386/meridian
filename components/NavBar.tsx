@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import MeridianMark from "@/components/MeridianMark";
 import { getProgress, PROGRESS_UPDATED_EVENT } from "@/lib/progress";
 import { formatTimeInZone } from "@/lib/timezones";
 import { detectBrowserTimeZone } from "@/lib/userTimeZone";
@@ -66,6 +67,7 @@ export default function NavBar() {
           href="/"
           className="flex items-center gap-2 text-sm font-bold tracking-[0.2em] uppercase"
         >
+          <MeridianMark size={20} />
           <span className="h-4 w-0.5 bg-accent" aria-hidden="true" />
           Meridian
         </Link>

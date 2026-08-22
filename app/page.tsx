@@ -31,15 +31,6 @@ export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
       <section className="relative overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-[6%] h-[44rem] w-[44rem] -translate-y-1/2 rounded-full blur-3xl"
-          style={{
-            background:
-              "radial-gradient(circle, var(--globe-glow) 0%, transparent 70%)",
-          }}
-        />
-
         <div className="relative mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-6 py-16 lg:grid-cols-[minmax(0,1fr)_32rem] lg:py-20">
           <div>
             <p className="text-xs tracking-widest text-muted uppercase">
@@ -71,7 +62,24 @@ export default function Home() {
             </div>
           </div>
 
-          <Globe />
+          <div className="relative">
+            {/*
+             * Sized/centered via inset-0 + m-auto on a fixed box, tied to
+             * this wrapper (which only ever contains the globe) rather than
+             * to the section or page grid — so it stays centered on the
+             * globe at any viewport width instead of drifting once the
+             * page's max-w-7xl content no longer fills the full section.
+             */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 m-auto h-[44rem] w-[44rem] rounded-full blur-3xl"
+              style={{
+                background:
+                  "radial-gradient(circle, var(--globe-glow) 0%, color-mix(in srgb, var(--globe-glow) 45%, transparent) 35%, color-mix(in srgb, var(--globe-glow) 15%, transparent) 60%, transparent 80%)",
+              }}
+            />
+            <Globe />
+          </div>
         </div>
       </section>
 

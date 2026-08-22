@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MeridianMark from "@/components/MeridianMark";
 
 const FOOTER_LINKS = [
   { href: "/learn", label: "Learn" },
@@ -12,6 +13,7 @@ export default function Footer() {
     <footer className="mt-auto border-t border-surface-border">
       <div className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-6 px-6 py-10 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
+          <MeridianMark size={20} />
           <span className="h-4 w-0.5 bg-accent" aria-hidden="true" />
           <span className="text-sm font-bold tracking-[0.2em] uppercase">
             Meridian
