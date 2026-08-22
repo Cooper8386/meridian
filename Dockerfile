@@ -15,7 +15,14 @@ ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+# Lookup mode's public map token is inlined into the client bundle, so it must
+# be present at build time. The secret MAPBOX_ACCESS_TOKEN is read at runtime
+# by the API route instead (pass it via the runtime environment, not here).
+ARG NEXT_PUBLIC_MAPBOX_TOKEN
+ENV NEXT_PUBLIC_MAPBOX_TOKEN=${NEXT_PUBLIC_MAPBOX_TOKEN}
 ENV NEXT_TELEMETRY_DISABLED=1
+# `npm run build` triggers the `prebuild` GeoNames download — the builder
+# stage needs outbound network access to download.geonames.org.
 RUN npm run build
 
 # --- runner: minimal production image using Next's standalone output ---

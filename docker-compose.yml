@@ -6,6 +6,8 @@ services:
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        # Public map token — inlined into the client bundle at build time.
+        NEXT_PUBLIC_MAPBOX_TOKEN: ${NEXT_PUBLIC_MAPBOX_TOKEN:-}
     image: meridian:latest
     container_name: meridian
     ports:
@@ -14,4 +16,7 @@ services:
       # Optional — not used by anything in v1 (see lib/supabaseClient.ts).
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+      # Lookup mode Tier 2 — secret Mapbox token, read at runtime by the
+      # /api/geo/mapbox route only. Not a build arg (never sent to the browser).
+      MAPBOX_ACCESS_TOKEN: ${MAPBOX_ACCESS_TOKEN:-}
     restart: unless-stopped

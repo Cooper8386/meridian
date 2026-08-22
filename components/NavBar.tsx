@@ -11,6 +11,7 @@ import { detectBrowserTimeZone } from "@/lib/userTimeZone";
 
 const NAV_LINKS = [
   { href: "/learn", label: "Learn" },
+  { href: "/lookup", label: "Lookup" },
   { href: "/practice", label: "Practice" },
   { href: "/map", label: "Map Challenge" },
   { href: "/progress", label: "Progress" },
