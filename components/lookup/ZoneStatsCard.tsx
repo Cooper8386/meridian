@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { GeoPlace } from "@/lib/geo";
+import { getProgress } from "@/lib/progress";
+import { detectBrowserTimeZone } from "@/lib/userTimeZone";
 import { getZoneStats } from "@/lib/zoneStats";
 
 interface ZoneStatsCardProps {
@@ -20,6 +22,14 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export default function ZoneStatsCard({ place }: ZoneStatsCardProps) {
   const [now, setNow] = useState<Date>(() => new Date());
+  // Resolved post-mount only — getProgress() reads localStorage, which
+  // doesn't exist during SSR. Same rule as NavBar: explicit override wins,
+  // otherwise the browser's detected zone.
+  const [userTimeZone, setUserTimeZone] = useState<string | null>(null);
+
+  useEffect(() => {
+    setUserTimeZone(getProgress().timeZoneOverride ?? detectBrowserTimeZone());
+  }, []);
 
   // Independent 1s tick so the local clock stays live regardless of anything
   // else on the page.
@@ -28,7 +38,7 @@ export default function ZoneStatsCard({ place }: ZoneStatsCardProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const stats = getZoneStats(place, now);
+  const stats = getZoneStats(place, now, userTimeZone);
 
   return (
     <motion.div
@@ -50,6 +60,11 @@ export default function ZoneStatsCard({ place }: ZoneStatsCardProps) {
             {stats.localTime}
           </p>
           <p className="font-mono text-xs text-muted">local time</p>
+          {stats.diffLabel && (
+            <p className="mt-1 font-mono text-xs text-accent/80">
+              {stats.diffLabel}
+            </p>
+          )}
         </div>
       </div>
 

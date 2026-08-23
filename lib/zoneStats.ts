@@ -6,7 +6,7 @@
 // zone's rules); these are the *current* values at the location.
 
 import type { GeoPlace } from "./geo";
-import { getOffsetLabel } from "./timezones";
+import { getOffsetLabel, getOffsetMinutes } from "./timezones";
 
 export interface ZoneStats {
   /** Full country name, e.g. "Argentina". */
@@ -23,6 +23,37 @@ export interface ZoneStats {
   longName: string;
   /** UTC offset, e.g. "UTC-03:00". */
   utcOffset: string;
+  /**
+   * Difference between this zone and the user's own zone, in minutes
+   * (positive = the place is ahead of the user). `null` when the user's
+   * zone isn't known yet (pre-mount).
+   */
+  diffMinutes: number | null;
+  /**
+   * Human phrasing of `diffMinutes`, e.g. "7 hours ahead of you" or
+   * "Same time as you". Empty when the user's zone isn't known yet.
+   */
+  diffLabel: string;
+}
+
+/**
+ * Phrase an offset difference in minutes. Half- and quarter-hour zones are
+ * real (India +05:30, Nepal +05:45, Chatham +12:45), so the minutes part is
+ * kept whenever it's non-zero.
+ */
+function formatDiff(minutes: number): string {
+  if (minutes === 0) return "Same time as you";
+
+  const ahead = minutes > 0;
+  const abs = Math.abs(minutes);
+  const hours = Math.floor(abs / 60);
+  const mins = abs % 60;
+
+  const parts: string[] = [];
+  if (hours > 0) parts.push(`${hours} hour${hours === 1 ? "" : "s"}`);
+  if (mins > 0) parts.push(`${mins} min`);
+
+  return `${parts.join(" ")} ${ahead ? "ahead of" : "behind"} you`;
 }
 
 const regionNames =
@@ -76,8 +107,23 @@ function localTimeInZone(timeZone: string, date: Date): string {
  * Compute the current zone stats for a place. `date` is injectable so the
  * caller can tick it every second for a live clock.
  */
-export function getZoneStats(place: GeoPlace, date: Date = new Date()): ZoneStats {
+export function getZoneStats(
+  place: GeoPlace,
+  date: Date = new Date(),
+  userTimeZone?: string | null,
+): ZoneStats {
   const timeZone = place.timeZone;
+
+  let diffMinutes: number | null = null;
+  if (userTimeZone) {
+    try {
+      diffMinutes =
+        getOffsetMinutes(timeZone, date) - getOffsetMinutes(userTimeZone, date);
+    } catch {
+      diffMinutes = null;
+    }
+  }
+
   return {
     country: countryName(place.country),
     city: place.name,
@@ -86,5 +132,7 @@ export function getZoneStats(place: GeoPlace, date: Date = new Date()): ZoneStat
     abbreviation: zoneNamePart(timeZone, date, "short"),
     longName: zoneNamePart(timeZone, date, "long"),
     utcOffset: getOffsetLabel(timeZone, date),
+    diffMinutes,
+    diffLabel: diffMinutes === null ? "" : formatDiff(diffMinutes),
   };
 }

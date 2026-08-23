@@ -18,7 +18,7 @@ export interface TimeZoneLesson {
   explanation: string;
 }
 
-function getOffsetMinutes(timeZone: string, date: Date): number {
+export function getOffsetMinutes(timeZone: string, date: Date): number {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     hourCycle: "h23",
