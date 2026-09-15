@@ -1,8 +1,7 @@
 /**
  * The Meridian logo mark: a clock face with two hands at different
  * positions (two time zones) and a thin meridian line through the
- * center. Geometry matches the source design (Claude Design project
- * "Meridian logoset design") 1:1 — see email-templates/README.md for
+ * center. Geometry matches the source design 1:1 — see email-templates/README.md for
  * the other place this same mark is duplicated as inline SVG, since
  * email clients can't use a React component.
  *
